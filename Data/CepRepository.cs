@@ -1,23 +1,38 @@
-﻿using System.Security.Cryptography.Xml;
-using Dapper;
+﻿using Dapper;
 using Npgsql;
+using mail_api.InternalInterface;
+using mail_api.Model;
+using Microsoft.Extensions.Configuration;
+using System.Threading.Tasks;
+using System;
+using Microsoft.Extensions.Logging;
 
 namespace mail_api.Data
 {
-    public class CepRepository: ICepRepository
+    public class CepRepository : ICepRepository
     {
-        private const string connectionString = " connection String  ";
+        private readonly string _connectionString;
+        private readonly ILogger<CepRepository> _logger;
 
+       
+        public CepRepository(IConfiguration configuration, ILogger<CepRepository> logger)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection");
+            _logger = logger;
+        }
+
+       
         public async Task<CepInfo> GetAdressByCep(string cep)
         {
             const string sql = @"
                 SELECT Cep, Logradouro, Complemento, Bairro, Localidade, Uf, Ibge, Gia, Ddd, Siafi
-                FROM CepInfo
+                FROM cepinfo
                 WHERE Cep = @Cep";
 
             try
             {
-                await using (var connection = new NpgsqlConnection(connectionString))
+               
+                await using (var connection = new NpgsqlConnection(_connectionString))
                 {
                     var result = await connection.QuerySingleOrDefaultAsync<CepInfo>(sql, new { Cep = cep }).ConfigureAwait(false);
                     return result;
@@ -25,6 +40,8 @@ namespace mail_api.Data
             }
             catch (Exception ex)
             {
+              
+                Console.WriteLine("Error fetching data from the database", ex);
                 throw new Exception("Error fetching data from the database", ex);
             }
         }
@@ -32,12 +49,13 @@ namespace mail_api.Data
         public async Task<bool> Create(CepInfo cep)
         {
             const string sql = @"
-                INSERT INTO CepInfo (Cep, Logradouro, Complemento, Bairro, Localidade, Uf, Ibge, Gia, Ddd, Siafi) 
+                INSERT INTO cepinfo (Cep, Logradouro, Complemento, Bairro, Localidade, Uf, Ibge, Gia, Ddd, Siafi) 
                 VALUES (@Cep, @Logradouro, @Complemento, @Bairro, @Localidade, @Uf, @Ibge, @Gia, @Ddd, @Siafi)";
 
             try
             {
-                await using (var connection = new NpgsqlConnection(connectionString))
+            
+                await using (var connection = new NpgsqlConnection(_connectionString))
                 {
                     var result = await connection.ExecuteAsync(sql, new
                     {
@@ -47,20 +65,21 @@ namespace mail_api.Data
                         cep.Bairro,
                         cep.Localidade,
                         cep.Uf,
-                        cep.Ibge,
+                        Ibge = (int)cep.Ibge,
                         cep.Gia,
-                        cep.Ddd,
-                        cep.Siafi
+                        ddd = (int)cep.Ibge,
+                        Siafi = (int)cep.Siafi   
                     }).ConfigureAwait(false);
 
-                    return result > 0;
+                    return result > 0; 
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception("Error fetching data from the database", ex);
+
+                _logger.LogError($"Error connecting to the database: {ex.Message}");
+                throw new Exception("Error inserting data into the database", ex);
             }
         }
-
     }
 }

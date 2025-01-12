@@ -1,5 +1,6 @@
 ﻿using mail_api.Data;
 using mail_api.DTO;
+using mail_api.Interfaces;
 using mail_api.InternalInterface;
 using mail_api.Model;
 using Newtonsoft.Json;
@@ -7,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace mail_api.Service
 {
-    public class CepService
+    public class CepService:ICepService
     {
 
         private readonly HttpClient _httpClient;

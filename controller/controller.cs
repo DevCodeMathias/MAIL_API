@@ -9,11 +9,11 @@ namespace mail_api.controller
 
     [ApiController]
     [Route("api/[controller]")]
-    public class controller:ControllerBase
+    public class Cepcontroller:ControllerBase
     {
 
         private readonly ICepService _cepService;
-        public controller(ICepService cepService)
+        public Cepcontroller(ICepService cepService)
         {
             _cepService = cepService;
         }
@@ -35,6 +35,7 @@ namespace mail_api.controller
             }
             catch (Exception ex)
             {
+                Console.WriteLine( ex);
                 return StatusCode(500, $"Internal error: {ex.Message}");
             }
         }
@@ -63,9 +64,12 @@ namespace mail_api.controller
             }
             catch (Exception ex)
             {
+                Console.WriteLine("Error fetching data from the database", ex);
                 return StatusCode(500, $"Internal error: {ex.Message}");
             }
         }
+
+
 
 
     }
