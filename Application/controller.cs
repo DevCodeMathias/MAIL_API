@@ -1,15 +1,14 @@
-﻿using mail_api.DTO;
-using mail_api.Interfaces;
+﻿using mail_api.Domain.DTO;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.Design;
-using System.Net;
+using mail_api.Domain.@interface;
+using mail_api.Domain.Model;
 
 namespace mail_api.controller
 {
 
     [ApiController]
     [Route("api/[controller]")]
-    public class Cepcontroller:ControllerBase
+    public class Cepcontroller : ControllerBase
     {
 
         private readonly ICepService _cepService;
@@ -18,12 +17,22 @@ namespace mail_api.controller
             _cepService = cepService;
         }
 
-        [HttpGet("{cep}")]
-        public async Task<IActionResult> GetCep(string cep)
+        [HttpGet]
+        public async Task<IActionResult> GetCep(cepRequest cepRequest)
         {
             try
             {
-                var result = await _cepService.GetByCep(cep);
+
+             
+                if (!Request.Headers.ContainsKey("Cep"))
+                {
+                    return BadRequest("CEP header is missing.");
+                }
+
+                string cep = Request.Headers["Cep"].ToString();
+
+
+                var result = await _cepService.GetByCep(cepRequest.Cep);
                 if (result != null)
                 {
                     return Ok(result);
@@ -35,7 +44,6 @@ namespace mail_api.controller
             }
             catch (Exception ex)
             {
-                Console.WriteLine( ex);
                 return StatusCode(500, $"Internal error: {ex.Message}");
             }
         }
@@ -43,34 +51,25 @@ namespace mail_api.controller
         [HttpPost]
         public async Task<IActionResult> PostAsync([FromBody] cepRequest cepRequest)
         {
-            if (cepRequest == null || string.IsNullOrWhiteSpace(cepRequest.Cep))
-            {
-                return BadRequest("Invalid CEP.");
-            }
-
             try
             {
-                var result = await _cepService.PostAddressByCep(cepRequest);
+             
+                bool isCepInDatabase = await _cepService.PostAddressByCep(cepRequest);
 
-                if (!result)
+                if (!isCepInDatabase)
                 {
-                    return StatusCode(500, "Error saving data to the database.");
+                   
+                    return Conflict("CEP already exists in the database.");
                 }
+
+                
                 return Ok("Data successfully saved");
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error fetching data from the database", ex);
+           
                 return StatusCode(500, $"Internal error: {ex.Message}");
             }
         }
-
-
-
-
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace mail_api.Model
+﻿namespace mail_api.Domain.Model
 {
     public class CepInfo
     {
@@ -8,9 +8,9 @@
         public string Bairro { get; set; }
         public string Localidade { get; set; }
         public string Uf { get; set; }
-        public int Ibge { get; set; }
+        public string Ibge { get; set; }
         public string Gia { get; set; }
-        public int Ddd { get; set; }
-        public int Siafi { get; set; }
+        public string Ddd { get; set; }
+        public string Siafi { get; set; }
     }
 }

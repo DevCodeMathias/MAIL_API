@@ -1,87 +1,88 @@
 ﻿using mail_api.Data;
-using mail_api.DTO;
-using mail_api.Interfaces;
-using mail_api.InternalInterface;
-using mail_api.Model;
+using mail_api.Domain.DTO;
+using mail_api.Domain.Model;
 using Newtonsoft.Json;
-using System.Text.RegularExpressions;
+using mail_api.Domain.@interface;
+using Microsoft.Extensions.Logging;
 
 namespace mail_api.Service
 {
-    public class CepService:ICepService
+    public class CepService : ICepService
     {
 
         private readonly HttpClient _httpClient;
         private readonly ICepRepository _cepRepository;
+        private readonly ILogger<CepService> _logger;
 
         public CepService(HttpClient httpClient, ICepRepository repository)
         {
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _cepRepository = repository ?? throw new ArgumentNullException(nameof(repository));
+            this._httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            this._cepRepository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
-        private async Task<CepInfo> GetAddressByCep(string cep)
+
+       
+        private async Task<CepInfo> FetchAddressByCep(cepRequest cepRequest)
         {
             try
             {
-                HttpResponseMessage response = await _httpClient.GetAsync($"https://viacep.com.br/ws/{cep}/json/");
+                HttpResponseMessage response = await _httpClient.GetAsync($"https://viacep.com.br/ws/{cepRequest.Cep}/json/");
                 if (response.IsSuccessStatusCode)
                 {
                     var json = await response.Content.ReadAsStringAsync();
                     return JsonConvert.DeserializeObject<CepInfo>(json);
                 }
 
-                return null;
+                throw new Exception("Address not found for the provided CEP.");
             }
             catch (HttpRequestException ex)
             {
-                throw new Exception("Error obtaining address by CEP.", ex);
+                _logger.LogError($"HttpRequestException occurred while fetching address for CEP {cepRequest.Cep}: {ex.Message}");
+                throw new ("Error obtaining address by CEP.", ex);
             }
             catch (Exception ex)
             {
+                _logger.LogError($"Unexpected error occurred while fetching address for CEP {cepRequest.Cep}: {ex.Message}");
+
                 throw new Exception("Unexpected error processing request.", ex);
             }
         }
 
         public async Task<CepInfo> GetByCep(string cep)
         {
-            string pattern = @"^(\d{5})[-]?(\d{3})$";
-            Regex regex = new Regex(pattern);
-            string cepFormat = regex.Replace(cep, "$1-$2");
 
-            var address = await _cepRepository.GetAdressByCep(cepFormat);
-
-            if (address == null)
-            {
-                return null;
-            }
-
+            CepInfo address = await _cepRepository.GetAdressByCep(cep);
             return address;
         }
-
+        
+     
         public async Task<bool> PostAddressByCep(cepRequest cepRequest)
         {
-            string pattern = @"^\d{5}[-]?\d{3}$";
-            if (!Regex.IsMatch(cepRequest.Cep, pattern))
+            try
             {
-                throw new ArgumentException("Invalid CEP format.");
-            }
+                
+                CepInfo addressData = await FetchAddressByCep(cepRequest);
 
-            var addressData = await GetAddressByCep(cepRequest.Cep);
-            if (addressData == null)
+                
+                CepInfo existingCep = await _cepRepository.GetAdressByCep(cepRequest.Cep);
+                if (existingCep != null)
+                {
+                   
+                    return false;
+                }
+
+              
+                bool result = await _cepRepository.Create(addressData);
+
+               
+                return result;
+            }
+            catch (Exception ex)
             {
-                return false;
+                _logger.LogError($"Error occurred while processing or saving address for CEP {cepRequest.Cep}: {ex.Message}");
+                throw new Exception("Error creating or fetching address.", ex);
             }
-
-            var existingCep = await _cepRepository.GetAdressByCep(cepRequest.Cep);
-            if (existingCep != null)
-            {
-                throw new InvalidOperationException("CEP already exists in the database.");
-            }
-
-            var result = await _cepRepository.Create(addressData);
-            return result;
         }
-
+     
     }
 }

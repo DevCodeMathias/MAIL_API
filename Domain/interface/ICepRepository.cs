@@ -1,6 +1,6 @@
-﻿using mail_api.Model;
+﻿using mail_api.Domain.Model;
 
-namespace mail_api.InternalInterface
+namespace mail_api.Domain.@interface
 {
     public interface ICepRepository
     {

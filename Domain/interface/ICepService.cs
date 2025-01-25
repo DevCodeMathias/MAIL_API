@@ -1,7 +1,7 @@
-﻿using mail_api.DTO;
-using mail_api.Model;
+﻿using mail_api.Domain.DTO;
+using mail_api.Domain.Model;
 
-namespace mail_api.Interfaces
+namespace mail_api.Domain.@interface
 {
     public interface ICepService
     {

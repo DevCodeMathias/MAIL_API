@@ -1,11 +1,8 @@
 ﻿using Dapper;
 using Npgsql;
-using mail_api.InternalInterface;
-using mail_api.Model;
-using Microsoft.Extensions.Configuration;
-using System.Threading.Tasks;
-using System;
-using Microsoft.Extensions.Logging;
+using mail_api.Domain.Model;
+using mail_api.Domain.@interface;
+using mail_api.Data.mappers;
 
 namespace mail_api.Data
 {
@@ -40,8 +37,8 @@ namespace mail_api.Data
             }
             catch (Exception ex)
             {
-              
-                Console.WriteLine("Error fetching data from the database", ex);
+
+                _logger.LogError($"Error fetching data from the database {ex.Message}");
                 throw new Exception("Error fetching data from the database", ex);
             }
         }
@@ -57,27 +54,15 @@ namespace mail_api.Data
             
                 await using (var connection = new NpgsqlConnection(_connectionString))
                 {
-                    var result = await connection.ExecuteAsync(sql, new
-                    {
-                        cep.Cep,
-                        cep.Logradouro,
-                        cep.Complemento,
-                        cep.Bairro,
-                        cep.Localidade,
-                        cep.Uf,
-                        Ibge = (int)cep.Ibge,
-                        cep.Gia,
-                        ddd = (int)cep.Ibge,
-                        Siafi = (int)cep.Siafi   
-                    }).ConfigureAwait(false);
-
-                    return result > 0; 
+                    var cepDto = CepMapper.ToDomainModel(cep);
+                    var result = await connection.ExecuteAsync(sql, cepDto).ConfigureAwait(false);
+                    return result > 0;
                 }
             }
             catch (Exception ex)
             {
 
-                _logger.LogError($"Error connecting to the database: {ex.Message}");
+                _logger.LogError($"Error inserting data into the database {ex.Message}");
                 throw new Exception("Error inserting data into the database", ex);
             }
         }
