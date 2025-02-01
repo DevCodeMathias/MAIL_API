@@ -1,6 +1,13 @@
-﻿namespace mail_api.Domain.internal interface
+﻿using mail_api.Domain.DTO;
+using mail_api.Domain.Model;
+
+namespace mail_api.Domain.Interfaces 
 {
-    public class IViaCepService
+    public interface IViaCepService
     {
+        Task<CepInfo> FetchAddressByCep(cepRequest cep);
     }
+
 }
+
+

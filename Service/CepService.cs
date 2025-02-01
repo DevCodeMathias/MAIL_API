@@ -2,57 +2,31 @@
 using mail_api.Domain.DTO;
 using mail_api.Domain.Model;
 using Newtonsoft.Json;
-using mail_api.Domain.@interface;
+using mail_api.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace mail_api.Service
 {
     public class CepService : ICepService
     {
-
-        private readonly HttpClient _httpClient;
+        
+        private readonly IViaCepService _viaCepService;
         private readonly ICepRepository _cepRepository;
         private readonly ILogger<CepService> _logger;
 
-        public CepService(HttpClient httpClient, ICepRepository repository)
+        public CepService( ICepRepository repository)
         {
-            this._httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+     
             this._cepRepository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
 
-       
-        private async Task<CepInfo> FetchAddressByCep(cepRequest cepRequest)
-        {
-            try
-            {
-                HttpResponseMessage response = await _httpClient.GetAsync($"https://viacep.com.br/ws/{cepRequest.Cep}/json/");
-                if (response.IsSuccessStatusCode)
-                {
-                    var json = await response.Content.ReadAsStringAsync();
-                    return JsonConvert.DeserializeObject<CepInfo>(json);
-                }
-
-                throw new Exception("Address not found for the provided CEP.");
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.LogError($"HttpRequestException occurred while fetching address for CEP {cepRequest.Cep}: {ex.Message}");
-                throw new ("Error obtaining address by CEP.", ex);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Unexpected error occurred while fetching address for CEP {cepRequest.Cep}: {ex.Message}");
-
-                throw new Exception("Unexpected error processing request.", ex);
-            }
-        }
-
+ 
         public async Task<CepInfo> GetByCep(string cep)
         {
 
-            CepInfo address = await _cepRepository.GetAdressByCep(cep);
-            return address;
+            CepInfo addressInRepository = await _cepRepository.GetAdressByCep(cep);
+            return addressInRepository;
         }
         
      
@@ -60,10 +34,8 @@ namespace mail_api.Service
         {
             try
             {
-                
-                CepInfo addressData = await FetchAddressByCep(cepRequest);
+                CepInfo addressApiResponse = await _viaCepService.FetchAddressByCep(cepRequest);
 
-                
                 CepInfo existingCep = await _cepRepository.GetAdressByCep(cepRequest.Cep);
                 if (existingCep != null)
                 {
@@ -71,11 +43,9 @@ namespace mail_api.Service
                     return false;
                 }
 
-              
-                bool result = await _cepRepository.Create(addressData);
+                bool creationStatus = await _cepRepository.Create(addressApiResponse);
 
-               
-                return result;
+                return creationStatus;
             }
             catch (Exception ex)
             {
@@ -83,6 +53,6 @@ namespace mail_api.Service
                 throw new Exception("Error creating or fetching address.", ex);
             }
         }
-     
+       
     }
 }

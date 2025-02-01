@@ -1,18 +1,16 @@
 using mail_api.Data;
 using mail_api.Service;
-using mail_api.Domain.@interface;
+using mail_api.Domain.Interfaces;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-
 builder.Services.AddHttpClient();
-
-
 
 
 builder.Services.AddScoped<ICepService, CepService>();
 builder.Services.AddScoped<ICepRepository, CepRepository>();
+builder.Services.AddScoped<IViaCepService, ViaCepService>();
 
 
 builder.Services.AddControllers();

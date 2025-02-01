@@ -1,6 +1,6 @@
 ﻿using mail_api.Domain.DTO;
 using Microsoft.AspNetCore.Mvc;
-using mail_api.Domain.@interface;
+using mail_api.Domain.Interfaces;
 using mail_api.Domain.Model;
 
 namespace mail_api.controller

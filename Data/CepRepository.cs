@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Npgsql;
 using mail_api.Domain.Model;
-using mail_api.Domain.@interface;
+using mail_api.Domain.Interfaces;
 using mail_api.Data.mappers;
 
 namespace mail_api.Data
